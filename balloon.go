@@ -1,8 +1,8 @@
 // balloon.go - implementation of Balloon memory-hard hashing.
 //
 // To the extent possible under law, Ivan Markin waived all copyright
-// and related or neighboring rights to this module of blake2xb, using the creative
-// commons "cc0" public domain dedication. See LICENSE or
+// and related or neighboring rights to this module of balloon, using the creative
+// commons "CC0" public domain dedication. See LICENSE or
 // <http://creativecommons.org/publicdomain/zero/1.0/> for full details.
 
 package balloon
