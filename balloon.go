@@ -43,7 +43,7 @@ func BalloonM(hr func() hash.Hash, passphrase, salt []byte, sCost, tCost uint64,
 	for m := uint64(0); m < M; m++ {
 		go func(core uint64) {
 			binaryM := make([]byte, 8)
-			binary.BigEndian.PutUint64(binaryM, core)
+			binary.LittleEndian.PutUint64(binaryM, core)
 			bouts <- Balloon(hr(), passphrase, append(salt, binaryM...), sCost, tCost)
 		}(m + 1)
 	}
@@ -75,7 +75,7 @@ func (b *Instance) Expand(h hash.Hash, passphrase, salt []byte, sCost uint64) {
 		panic("balloon: internal buffer has wrong length")
 	}
 	h.Reset()
-	binary.Write(h, binary.BigEndian, b.Cnt)
+	binary.Write(h, binary.LittleEndian, b.Cnt)
 	b.Cnt++
 	h.Write(passphrase)
 	h.Write(salt)
@@ -84,7 +84,7 @@ func (b *Instance) Expand(h hash.Hash, passphrase, salt []byte, sCost uint64) {
 
 	for m := uint64(1); m < sCost; m++ {
 		h.Reset()
-		binary.Write(h, binary.BigEndian, b.Cnt)
+		binary.Write(h, binary.LittleEndian, b.Cnt)
 		h.Write(b.LastBlock)
 		b.LastBlock = h.Sum(nil)
 		copy(b.Buffer[b.Cnt*blockSize:], b.LastBlock)
@@ -106,7 +106,7 @@ func (b *Instance) Mix(h hash.Hash, salt []byte, sCost, tCost uint64) {
 	for t := uint64(0); t < tCost; t++ {
 		for m := uint64(0); m < sCost; m++ {
 			h.Reset()
-			binary.Write(h, binary.BigEndian, b.Cnt)
+			binary.Write(h, binary.LittleEndian, b.Cnt)
 			b.Cnt++
 			h.Write(b.LastBlock)
 			h.Write(b.Buffer[m*blockSize : (m+1)*blockSize])
@@ -115,17 +115,26 @@ func (b *Instance) Mix(h hash.Hash, salt []byte, sCost, tCost uint64) {
 
 			for i := uint64(0); i < delta; i++ {
 				h.Reset()
-				binary.Write(h, binary.BigEndian, b.Cnt)
+				binary.Write(h, binary.LittleEndian, t)
+				binary.Write(h, binary.LittleEndian, m)
+				binary.Write(h, binary.LittleEndian, i)
+				idxBlock := h.Sum(nil)
+				h.Reset()
+				binary.Write(h, binary.LittleEndian, b.Cnt)
 				b.Cnt++
 				h.Write(salt)
-				binary.Write(h, binary.BigEndian, t)
-				binary.Write(h, binary.BigEndian, m)
-				binary.Write(h, binary.BigEndian, i)
-				otherInt.SetBytes(h.Sum(nil))
+				h.Write(idxBlock)
+				otherBytes := h.Sum(nil)
+
+				for left, right := 0, len(otherBytes)-1; left < right; left, right = left+1, right-1 {
+					otherBytes[left], otherBytes[right] = otherBytes[right], otherBytes[left]
+				}
+
+				otherInt.SetBytes(otherBytes)
 				otherInt.Mod(otherInt, sCostInt)
 				other := otherInt.Uint64()
 				h.Reset()
-				binary.Write(h, binary.BigEndian, b.Cnt)
+				binary.Write(h, binary.LittleEndian, b.Cnt)
 				b.Cnt++
 				h.Write(b.LastBlock)
 				h.Write(b.Buffer[other*blockSize : (other+1)*blockSize])
