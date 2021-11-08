@@ -34,7 +34,7 @@ func BenchmarkBalloonM(b *testing.B) {
 	}
 }
 
-func TestVectors(t *testing.T) {
+func TestBalloonVectors(t *testing.T) {
 	type test_vector struct {
 		password []byte
 		salt []byte
@@ -83,6 +83,98 @@ func TestVectors(t *testing.T) {
 
 	for _, vector := range test_vectors {
 		output := Balloon(sha256.New(), vector.password, vector.salt, vector.s_cost, vector.t_cost)
+		data, err := hex.DecodeString(vector.output)
+
+		if err != nil {
+			panic(err)
+		}
+
+		if !reflect.DeepEqual(output, data) {
+			t.Log("Expected: ", vector.output, " Output: ", hex.EncodeToString(output))
+			t.Fail()
+		}
+	}
+}
+
+func TestBalloonMVectors(t *testing.T) {
+	type test_vector struct {
+		password []byte
+		salt []byte
+		s_cost uint64
+		t_cost uint64
+		p_cost uint64
+		output string
+	}
+
+	test_vectors := []test_vector{
+		{
+			password: []byte("hunter42"),
+			salt: []byte("examplesalt"),
+			s_cost: 1024,
+			t_cost: 3,
+			p_cost: 4,
+			output: "1832bd8e5cbeba1cb174a13838095e7e66508e9bf04c40178990adbc8ba9eb6f",
+		},
+		{
+			password: []byte(""),
+			salt: []byte("salt"),
+			s_cost: 3,
+			t_cost: 3,
+			p_cost: 2,
+			output: "f8767fe04059cef67b4427cda99bf8bcdd983959dbd399a5e63ea04523716c23",
+		},
+		{
+			password: []byte("password"),
+			salt: []byte(""),
+			s_cost: 3,
+			t_cost: 3,
+			p_cost: 3,
+			output: "bcad257eff3d1090b50276514857e60db5d0ec484129013ef3c88f7d36e438d6",
+		},
+		{
+			password: []byte("password"),
+			salt: []byte(""),
+			s_cost: 3,
+			t_cost: 3,
+			p_cost: 1,
+			output: "498344ee9d31baf82cc93ebb3874fe0b76e164302c1cefa1b63a90a69afb9b4d",
+		},
+		{
+			password: []byte("\000"),
+			salt: []byte("\000"),
+			s_cost: 3,
+			t_cost: 3,
+			p_cost: 4,
+			output: "8a665611e40710ba1fd78c181549c750f17c12e423c11930ce997f04c7153e0c",
+		},
+		{
+			password: []byte("\000"),
+			salt: []byte("\000"),
+			s_cost: 3,
+			t_cost: 3,
+			p_cost: 1,
+			output: "d9e33c683451b21fb3720afbd78bf12518c1d4401fa39f054b052a145c968bb1",
+		},
+		{
+			password: []byte("password"),
+			salt: []byte("salt"),
+			s_cost: 1,
+			t_cost: 1,
+			p_cost: 16,
+			output: "a67b383bb88a282aef595d98697f90820adf64582a4b3627c76b7da3d8bae915",
+		},
+		{
+			password: []byte("password"),
+			salt: []byte("salt"),
+			s_cost: 1,
+			t_cost: 1,
+			p_cost: 1,
+			output: "97a11df9382a788c781929831d409d3599e0b67ab452ef834718114efdcd1c6d",
+		},
+	}
+
+	for _, vector := range test_vectors {
+		output := BalloonM(sha256.New, vector.password, vector.salt, vector.s_cost, vector.t_cost, vector.p_cost)
 		data, err := hex.DecodeString(vector.output)
 
 		if err != nil {
