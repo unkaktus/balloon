@@ -126,7 +126,7 @@ func (b *Instance) Mix(h hash.Hash, salt []byte, sCost, tCost uint64) {
 				h.Write(salt)
 				h.Write(idxBlock)
 				otherBytes := h.Sum(nil)
-				otherWords := make([]big.Word, h.Size() / (bits.UintSize / 8))
+				otherWords := make([]big.Word, h.Size()/(bits.UintSize/8))
 
 				for byte, word := 0, 0; byte < len(otherBytes); byte, word = byte+bits.UintSize/8, word+1 {
 					if bits.UintSize == 64 {
