@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"hash"
 	"math/big"
+	"math/bits"
 )
 
 const (
@@ -125,12 +126,19 @@ func (b *Instance) Mix(h hash.Hash, salt []byte, sCost, tCost uint64) {
 				h.Write(salt)
 				h.Write(idxBlock)
 				otherBytes := h.Sum(nil)
+				otherWords := make([]big.Word, h.Size() / (bits.UintSize / 8))
 
-				for left, right := 0, len(otherBytes)-1; left < right; left, right = left+1, right-1 {
-					otherBytes[left], otherBytes[right] = otherBytes[right], otherBytes[left]
+				for byte, word := 0, 0; byte < len(otherBytes); byte, word = byte+bits.UintSize/8, word+1 {
+					if bits.UintSize == 64 {
+						otherWords[word] = big.Word(binary.LittleEndian.Uint64(otherBytes[byte : byte+bits.UintSize/8]))
+					} else if bits.UintSize == 32 {
+						otherWords[word] = big.Word(binary.LittleEndian.Uint32(otherBytes[byte : byte+bits.UintSize/8]))
+					} else {
+						panic("balloon: unsupported architecture")
+					}
 				}
 
-				otherInt.SetBytes(otherBytes)
+				otherInt.SetBits(otherWords)
 				otherInt.Mod(otherInt, sCostInt)
 				other := otherInt.Uint64()
 				h.Reset()
